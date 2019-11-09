@@ -9,5 +9,6 @@ Vein is a wearable device that uses an IMU and machine learning to count the num
 - HC-05 Wireless Bluetooth Host Serial Transceiver Module 
 - 9V Battery
 
+<img width="400" alt="Vein Hardware" src="https://user-images.githubusercontent.com/12948431/68535026-b7b67b00-0309-11ea-9519-f89c0f019290.png">
 
 ## System Design

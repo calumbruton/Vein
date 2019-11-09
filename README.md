@@ -1,5 +1,5 @@
 
-# A Wearable for the Lifter
+# VEIN: A Wearable for the Lifter
 
 Vein is a wearable device that uses an IMU and machine learning to count the number of repetitions performed of an exercise for a user and predict the exercise they are doing. Allowing the weight lifter to avoid the hassle of counting every rep and manually tracking their workouts.
 

@@ -181,8 +181,12 @@ void loop()
     Serial.println(aaWorld.z);
 //  
     // Send data out from bluetooth device
+//    serial_connection.println(
+//      "Yaw: " + String(ypr[0] * 180/M_PI) + "\tPitch: " + String(ypr[1] * 180/M_PI) + "\tRoll: " + String(ypr[2] * 180/M_PI) +
+//      "\t\t" + "XAccel: " + String(aaWorld.x) + "\tYAccel: " + String(aaWorld.y) + "\tZAccel: " + String(aaWorld.z));
+
+    // Clean YPR data to actually use
     serial_connection.println(
-      "Yaw: " + String(ypr[0] * 180/M_PI) + "\tPitch: " + String(ypr[1] * 180/M_PI) + "\tRoll: " + String(ypr[2] * 180/M_PI) +
-      "\t\t" + "XAccel: " + String(aaWorld.x) + "\tYAccel: " + String(aaWorld.y) + "\tZAccel: " + String(aaWorld.z));
+      String(ypr[0] * 180/M_PI) + "," + String(ypr[1] * 180/M_PI) + ","  + String(ypr[2] * 180/M_PI) + "," + String(aaWorld.x) + "," + String(aaWorld.y) + "," + String(aaWorld.z));
   }
 }

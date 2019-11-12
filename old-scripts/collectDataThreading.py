@@ -3,6 +3,7 @@ import time
 import keyboard 
 import argparse
 import os
+from threading import Thread
 
 
 def writeToFile(exercise, filenum, data):
@@ -11,7 +12,26 @@ def writeToFile(exercise, filenum, data):
     f.write(str(data))  
     f.close()
 
-def collectData(exercise, filenum):
+
+def keyboard_poller(exercise, filenum, data):
+    first = True    # Used to not save the first click of shift as it usually is longer
+
+    while (True):
+        # If q is pressed new rep
+        if keyboard.is_pressed('shift'): 
+            if first:
+                first = False
+            else:
+                # Completed a rep save the data to a file
+                print("\nSave repitition -- {} DATA POINTS\n".format(len(data[0])))
+                time.sleep(0.15)
+
+                writeToFile(exercise, filenum, data)
+                data = [[],[],[],[],[],[]]
+                filenum+=1
+
+    
+def collectData(exercise, filenum, data):
 
     print("Start")
     port="/dev/tty.HC-05-DevB"                          # This will be different for various devices and on windows it will probably be a COM port.
@@ -20,33 +40,15 @@ def collectData(exercise, filenum):
     bluetooth.flushInput()                              # This gives the bluetooth a little kick
     collecting = False
 
-    # yaw,pitch,roll,x_acc,y_acc,z_acc
-    data = [[],[],[],[],[],[]]
 
     # Make a directory for the exercise data if it doesn't exist
     if not os.path.exists("data/{}".format(exercise)):
         os.makedirs("data/{}".format(exercise), mode=0o777)
-        os.chmod("data/{}".format(exercise), mode=0o777)
-
-    first = True    # Used to not save the first click of shift as it usually is longer
 
     try: 
-        while(True):    
-            # If q is pressed new rep
-            if keyboard.is_pressed('shift'): 
-                if first:
-                    first = False
-                else:
-                    # Completed a rep save the data to a file
-                    print("\nSave repitition\n")
-                    time.sleep(0.15)
-
-                    writeToFile(exercise, filenum, data)
-                    data = [[],[],[],[],[],[]]
-                    filenum+=1
-                
+        while(True):   
             # If space is pressed and not intaking then start intaking else stop intaking
-            elif keyboard.is_pressed('space'):
+            if keyboard.is_pressed('space'):
                 collecting = not collecting
                 time.sleep(0.3)
                 if not collecting:
@@ -54,13 +56,9 @@ def collectData(exercise, filenum):
                     # Completed last rep save data to a file
                     # writeToFile(exercise, filenum, data)
                 else:
-                    print("\nSTART OF SET\n")
-            
-            if collecting:
-                # Visualize the data                          
-                # visual_data=bluetooth.readline()                 # This reads the incoming data. In this particular example it will be the "Hello from Blue" line
-                # print(visual_data.decode(), end='')              # These are bytes coming in so a decode is needed
+                    print("\nSTART OF SET\n") 
 
+            if collecting:
                 # The data we actually store in Yaw,Pitch,Roll,XAccel,YAccel,ZAccel format
                 input_data=bluetooth.readline()   
                 curr_data = input_data.decode().split(",")
@@ -72,11 +70,10 @@ def collectData(exercise, filenum):
                     for i in range(6):
                         data[i].append(curr_data[i])
 
-    # Gracefully exit on control C
-    except KeyboardInterrupt:
+    finally:
         bluetooth.close()   
         print("\n{0} Closed Bluetooth connection before exiting {0}\n".format("="*5))
-        exit()
+
 
 
 def main():
@@ -89,7 +86,14 @@ def main():
     args = parser.parse_args()
     print(args.exercise, args.filenum)
 
-    collectData(args.exercise, args.filenum)
+    # This data struct is shared between threads
+    # yaw,pitch,roll,x_acc,y_acc,z_acc
+    data = [[],[],[],[],[],[]]
+
+    poller = Thread(target=collectData, args=(args.exercise, args.filenum, data))
+    poller.start()
+    print("HERE??")
+    keyboard_poller(args.exercise, args.filenum, data)
 
 
 main()

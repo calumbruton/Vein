@@ -3,6 +3,15 @@
 
 Vein is a wearable device that uses an IMU and machine learning to count the number of repetitions performed of an exercise for a user and predict the exercise they are doing. Allowing the weight lifter to avoid the hassle of counting every rep and manually tracking their workouts.
 
+### Exercises Currently Supported
+- Bicep Curl
+- Lateral Raises
+- Front Raises
+- Pullup
+- Bench Press
+- Deadlift
+- Squat
+- Overhead press
 
 ## Files
 ### collectData.py 
@@ -48,5 +57,6 @@ python3 visualizeImuData.py -e bicep-curl
 
 ## Requirements
 ```
-pip3 install PyQt5 matplotlib numpy
+pip3 install PyQt5 matplotlib numpy tensorflow
+pip3 install keras==2.2.0
 ```

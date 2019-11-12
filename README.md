@@ -31,6 +31,8 @@ python3 dataVisualization.py
 python3 visualizeImuData.py -e bicep-curl
 ```
 
+<img width="600" alt="Screen Shot 2019-11-11 at 8 34 33 PM" src="https://user-images.githubusercontent.com/12948431/68634317-065b4500-04c3-11ea-99b7-808bec683ed5.png">
+
 
 ## Prototype Components
 - Arduino Nano

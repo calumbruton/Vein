@@ -12,6 +12,7 @@ Vein is a wearable device that uses an IMU and machine learning to count the num
 ```
 sudo python3 collectData.py 1 -e bicep-curl
 ```
+- Press spacebar to start viewing the data stream, press shift to start recording reps, and press shift at the end of each repition of the given exercise, press shift again to stop
 
 ### dataVisualization.py
 - Used to preview the amount of time taken for each rep of a given exercise using matplotlib

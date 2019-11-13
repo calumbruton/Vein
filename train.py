@@ -15,6 +15,7 @@ from model import *
 
 # The size of the window (number of data points) used for classification
 WINDOW_SIZE = 50
+TEST_SET = 0.25
 
 def importData():
     dataset = []
@@ -59,9 +60,7 @@ def preprocess(dataset):
             rep_data[0][i] = imu_data[start:end]
 
         data = np.array(rep_data[0])
-        # print("Before: ", data.shape)
         data = np.transpose(data) # Reshape the data for 1D keras model
-        # print("After : ", data.shape)
 
         clean_data.append(data)
         labels.append(label)
@@ -69,7 +68,8 @@ def preprocess(dataset):
     clean_data = np.array(clean_data)
     labels = np.array(labels)
 
-    train_data, test_data, train_labels, test_labels = train_test_split(clean_data, labels, test_size=0.25, random_state=42)
+    # Randomly splits data and labels into test and training sets
+    train_data, test_data, train_labels, test_labels = train_test_split(clean_data, labels, test_size=TEST_SET, random_state=42)
 
     return train_data, test_data, train_labels, test_labels, categories
 

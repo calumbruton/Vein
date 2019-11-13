@@ -14,10 +14,14 @@ def writeToFile(exercise, filenum, data):
 def collectData(exercise, filenum):
 
     print("Start")
-    port="/dev/tty.HC-05-DevB"                          # This will be different for various devices and on windows it will probably be a COM port.
+    port="/dev/tty.HC-05-DevB"                          # Connect to my HC-05 BT Module
+    # port="/dev/tty.HC-05-DevB"                          # Connect to my HM-10 BTE Module
     bluetooth=serial.Serial(port, 9600)                 # Start communications with the bluetooth unit
     print("Connected")
     bluetooth.flushInput()                              # This gives the bluetooth a little kick
+
+    # Viewing data and collecting data
+    viewing = False
     collecting = False
 
     # yaw,pitch,roll,x_acc,y_acc,z_acc
@@ -36,6 +40,8 @@ def collectData(exercise, filenum):
             if keyboard.is_pressed('shift'): 
                 if first:
                     first = False
+                    collecting = True
+                    print("\nStarting Collection\n")
                 else:
                     # Completed a rep save the data to a file
                     print("\nSave repitition\n")
@@ -47,21 +53,15 @@ def collectData(exercise, filenum):
                 
             # If space is pressed and not intaking then start intaking else stop intaking
             elif keyboard.is_pressed('space'):
-                collecting = not collecting
+                viewing = not viewing
                 time.sleep(0.3)
-                if not collecting:
+                if not viewing:
                     print("\nEND OF SET\n")
-                    # Completed last rep save data to a file
-                    # writeToFile(exercise, filenum, data)
-                else:
-                    print("\nSTART OF SET\n")
+                    collecting = False
+                    First = True
+                    data = [[],[],[],[],[],[]]
             
-            if collecting:
-                # Visualize the data                          
-                # visual_data=bluetooth.readline()                 # This reads the incoming data. In this particular example it will be the "Hello from Blue" line
-                # print(visual_data.decode(), end='')              # These are bytes coming in so a decode is needed
-
-                # The data we actually store in Yaw,Pitch,Roll,XAccel,YAccel,ZAccel format
+            if viewing:
                 input_data=bluetooth.readline()   
                 curr_data = input_data.decode().split(",")
                 # Only if we receive all of the data use it
@@ -69,8 +69,9 @@ def collectData(exercise, filenum):
                     curr_data[5] = curr_data[5][:-2]                # Remove end of line stuff
                     print("Yaw: {}\tPitch: {}\tRoll: {}\t\tXAccel: {}\tYAccel: {}\tZAccel: {}".format(curr_data[0],curr_data[1],curr_data[2],curr_data[3],curr_data[4],curr_data[5]))
                     # print(curr_data, end='')
-                    for i in range(6):
-                        data[i].append(curr_data[i])
+                    if collecting:
+                        for i in range(6):
+                            data[i].append(curr_data[i])
 
     # Gracefully exit on control C
     except KeyboardInterrupt:

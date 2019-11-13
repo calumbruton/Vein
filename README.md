@@ -19,7 +19,7 @@ Vein is a wearable device that uses an IMU and machine learning to count the num
 - run the script using the argument -e \<exercise name> and a positional argument \<N> for the file number of the exercise to start recording at
 - Must be run as administrator for keyboard access
 ```
-sudo python3 collectData.py 1 -e bicep-curl
+sudo python3 collectData.py -e bicep-curl 1
 ```
 - Press spacebar to start viewing the data stream, press shift to start recording reps, and press shift at the end of each repition of the given exercise, press shift again to stop
 
@@ -43,6 +43,17 @@ python3 visualizeImuData.py -e bicep-curl
 
 <img width="600" alt="Screen Shot 2019-11-11 at 8 34 33 PM" src="https://user-images.githubusercontent.com/12948431/68634317-065b4500-04c3-11ea-99b7-808bec683ed5.png">
 
+- To see an individual statistic with labels per rep use the -t \<N> flag where an N value of:
+    - 1 = Yaw
+    - 2 = Pitch
+    - 3 = Roll
+    - 4 = X Acceleration
+    - 5 = Y Acceleration
+    - 6 = Z Acceleration
+
+```
+python3 visualizeImuData.py -e bicep-curl -t 2
+```
 
 ## Prototype Components
 - Arduino Nano
@@ -52,14 +63,22 @@ python3 visualizeImuData.py -e bicep-curl
 
 <img width="400" alt="Vein Hardware" src="https://user-images.githubusercontent.com/12948431/68535026-b7b67b00-0309-11ea-9519-f89c0f019290.png">
 
-## System Design
+## Machine Learning Model
 
+Input Data:
+
+6xT where T can be decided as the number of data points to use in a given prediction. In my experiments I decided to use a T value of (TODO)
 
 
 
 
 ## Requirements
 ```
-pip3 install PyQt5 matplotlib numpy tensorflow
+pip3 install PyQt5 matplotlib numpy tensorflow sklearn
 pip3 install keras==2.2.0
 ```
+
+# Related Work
+
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6387025/pdf/sensors-19-00714.pdf
+

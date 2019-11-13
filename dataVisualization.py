@@ -27,6 +27,7 @@ def readAllFiles():
 
 def readExerciseFiles(exercise):
     num_points = []
+    rep_filenames = []
 
     # Open file for writing
     for rep_file in os.listdir("data/{}".format(exercise)):
@@ -36,16 +37,18 @@ def readExerciseFiles(exercise):
         data = literal_eval(first_line)
         print(len(data[0]))
         num_points.append(len(data[0]))
+        rep_filenames.append(rep_file)
         f.close()
     
-    return num_points
+    return num_points, rep_filenames
 
 
-def createLineGraph(data):
+def createLineGraph(data, labels):
     plt.plot(data)
     plt.title('Number of data points per repetition')
     plt.ylabel('Number of data points')
     plt.xlabel('Rep number')
+    plt.legend()
     plt.show()
 
 # data is 2d array of exercise and data
@@ -69,8 +72,8 @@ def main():
         num_points = readAllFiles()
         createMultiLineGraph(num_points)   
     else:
-        num_points = readExerciseFiles(args.exercise)    
-        createLineGraph(num_points)
+        num_points, labels = readExerciseFiles(args.exercise)    
+        createLineGraph(num_points, labels)
 
 
 main()

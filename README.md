@@ -3,15 +3,35 @@
 
 Vein is a wearable device that uses an IMU and machine learning to count the number of repetitions performed of an exercise for a user and predict the exercise they are doing. Allowing the weight lifter to avoid the hassle of counting every rep and manually tracking their workouts.
 
+- Orientation Note: Battery Opening to Hand
+
 ### Exercises Currently Supported
 - Bicep Curl
+- Hammer Curl
 - Lateral Raises
 - Front Raises
+- Dumbbell Overhead Press
+- Dumbbell Deadlift
+- Dumbbell Press
+- Dumbbell Lunge
+- Bent Over Dumbbell Reverse Fly
+- Dumbbell Row (hand)
+
+--------
+
 - Pullup
 - Bench Press
 - Deadlift
 - Squat
 - Overhead press
+
+### Participants
+
+- Calum = 0
+- Natalie = 1000
+- Karen = 2000
+- Mark = 3000
+
 
 ## Files
 ### collectData.py 
@@ -25,7 +45,7 @@ sudo python3 collectData.py -e bicep-curl 1
 
 ### dataVisualization.py
 - Used to preview the amount of time taken for each rep of a given exercise using matplotlib
-- run the script with the flag -e \<exercise name> to show a specific exercise
+- run the script with the flag -e \<exercise name> to show a specific exercise, it will also print out every repition file and the number of data points in it to the console
 ```
 python3 dataVisualization.py -e bicep-curl
 ```
@@ -56,6 +76,14 @@ python3 visualizeImuData.py -e bicep-curl
 python3 visualizeImuData.py -e bicep-curl -t 2
 ```
 
+### findGarbageData.py
+Helps find data with less than \<N> data points
+
+```
+python3 findGarbageData.py -n 20
+```
+
+
 ### train.py
 - Used to train the keras model on the data collected
 ```
@@ -84,11 +112,13 @@ Input Data:
 
 ## Requirements
 ```
-pip3 install PyQt5 matplotlib numpy tensorflow sklearn
+pip3 install PyQt5 matplotlib numpy tensorflow sklearn pandas
 pip3 install keras==2.2.0
 ```
 
 # Related Work
 
 https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6387025/pdf/sensors-19-00714.pdf
+
+
 

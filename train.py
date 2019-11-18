@@ -6,15 +6,17 @@ to predict the exercise the data corresponds to
 import os
 from ast import literal_eval
 import numpy as np
+import pandas as pd
 import random
 import keras
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
 
 from model import *
 
 # The size of the window (number of data points) used for classification
-WINDOW_SIZE = 50
+WINDOW_SIZE = 30
 TEST_SET = 0.25
 
 def importData():
@@ -69,18 +71,20 @@ def preprocess(dataset):
     labels = np.array(labels)
 
     # Randomly splits data and labels into test and training sets
-    train_data, test_data, train_labels, test_labels = train_test_split(clean_data, labels, test_size=TEST_SET, random_state=42)
+    train_data, test_data, train_labels, test_labels = train_test_split(clean_data, labels, test_size=TEST_SET, random_state=40)
 
     return train_data, test_data, train_labels, test_labels, categories
 
 
 def main():
     dataset = importData()
-    train_data, test_data, train_labels, test_labels, categories = preprocess(dataset)
+    train_data, test_data, train_labels, test_labels, labels = preprocess(dataset)
 
-    # Encode each of the categories of exercise to 0,1,2.. etc.
+    labels = list(labels) # change labels from a set to list
+
+    # Encode each of the labels of exercise to 0,1,2.. etc.
     label_encoder = preprocessing.LabelEncoder()
-    label_encoder.fit(list(categories))
+    label_encoder.fit(labels)
     train_labels = label_encoder.transform(train_labels)
     test_labels = label_encoder.transform(test_labels)
 
@@ -94,11 +98,27 @@ def main():
         
 
     # Train the model
-    model.fit(train_data, train_labels, batch_size=10, epochs=10, verbose=1)
+    model.fit(train_data, train_labels, batch_size=20, epochs=20, verbose=1)
 
     # Test the model
     test_loss, test_acc = model.evaluate(test_data, test_labels, verbose=2)
-    print('\nTest accuracy:', test_acc)
+    print('\nTest accuracy: {0:.2f}%'.format(test_acc*100))
+
+    # View the predictions
+    predictions = model.predict(test_data)
+    y_pred = np.argmax(predictions, axis=1)
+    print(y_pred)
+    print(test_labels)
+    print("\nConfusion Matrix:\n", confusion_matrix(test_labels, y_pred))
+    print("\nSummary:\n", pd.crosstab(test_labels, y_pred, rownames=['True'], colnames=['Predicted'], margins=True), sep="")
+
+    # Change array vals from ints to their respective labels
+    y_pred_names = label_encoder.inverse_transform(y_pred)
+    test_label_names = label_encoder.inverse_transform(test_labels)
+
+    # View predictions with their respective labels
+    print("\nSummary With Labels:\n", pd.crosstab(test_label_names, y_pred_names, rownames=['True'], colnames=['Predicted'], margins=True), sep="")
+    print("\nClassification report:\n", classification_report(test_label_names, y_pred_names))
 
 
 main()

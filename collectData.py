@@ -26,7 +26,7 @@ def collectData(exercise, filenum):
 
     # yaw,pitch,roll,x_acc,y_acc,z_acc
     data = [[],[],[],[],[],[]]
-
+    
     # Make a directory for the exercise data if it doesn't exist
     if not os.path.exists("data/{}".format(exercise)):
         os.makedirs("data/{}".format(exercise), mode=0o777)

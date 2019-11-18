@@ -7,17 +7,20 @@ import matplotlib.ticker as ticker
 
 def readAllFiles():
     num_points = []
-
+    
     # Open file for writing
     for exercise in os.listdir("data"):
+        # exercise points will hold the number of points in each file
+        # for that exercise and the exercise name as the last value
         exercise_points = []
         for rep_file in os.listdir("data/{}".format(exercise)):
             f = open("data/{}/{}".format(exercise,rep_file), "r")
-            print("data/{}/{}".format(exercise,rep_file))
+            # print("data/{}/{}".format(exercise,rep_file))
             first_line = f.readline()
             data = literal_eval(first_line)
             exercise_points.append(len(data[0]))
             f.close()
+        print("{: >30}: {} data points".format(exercise, len(exercise_points)))
         exercise_points.append(exercise)
         num_points.append(exercise_points)
         

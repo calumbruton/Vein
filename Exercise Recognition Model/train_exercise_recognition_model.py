@@ -14,6 +14,7 @@ from collections import Counter
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.model_selection import StratifiedKFold
 from numpy import mean
 from numpy import std
 
@@ -146,9 +147,6 @@ def main():
 
     # Test different parameters
     if(args.test):
-        # filter_sizes = [2,4,16,32,64,128]
-        # kernal_sizes = [2, 3, 5, 7, 11, 15]
-        # params = [filter_sizes, kernal_sizes]
         filter_sizes = [2,3,4,8,16,32,64]
         kernal_sizes = [2,3,4,6,8]
         params = [filter_sizes, kernal_sizes]
@@ -158,12 +156,17 @@ def main():
     model = createModel(n_filters=2, k_size=2)
     print(model.summary())
 
-    # Train the model
-    model.fit(train_data, train_labels, validation_split=0.3, batch_size=32, epochs=150, verbose=1)
+    # Train the model using k-fold cross validation - one split acts as validation
+    kfold = StratifiedKFold(n_splits=6, shuffle=True, random_state=RANDOM_SEED)
+
+    # train and validation will be indices of values of each set, stratified to balance the number of each class
+    for train, validation in kfold.split(train_data, train_labels):
+        print (Counter(train_labels[train]))
+        model.fit(train_data[train], train_labels[train], validation_data=(train_data[validation], train_labels[validation]), batch_size=32, epochs=10, verbose=1)
 
     # Test the model
     test_loss, test_acc = model.evaluate(test_data, test_labels, verbose=2)
-    print('\TEST ACCURACY: {0:.2f}%\n'.format(test_acc*100))
+    print('\nTEST ACCURACY: {0:.2f}%\n'.format(test_acc*100))
 
     # View the predictions
     predictions = model.predict(test_data)

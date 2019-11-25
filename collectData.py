@@ -16,7 +16,7 @@ def collectData(exercise, filenum):
     print("Start")
     port="/dev/tty.HC-05-DevB"                          # Connect to my HC-05 BT Module
     # port="/dev/tty.HC-05-DevB"                          # Connect to my HM-10 BTE Module
-    bluetooth=serial.Serial(port, 9600)                 # Start communications with the bluetooth unit
+    bluetooth=serial.Serial(port, 115200)                 # Start communications with the bluetooth unit
     print("Connected")
     bluetooth.flushInput()                              # This gives the bluetooth a little kick
 
@@ -33,6 +33,7 @@ def collectData(exercise, filenum):
         os.chmod("data/{}".format(exercise), mode=0o777)
 
     first = True    # Used to not save the first click of shift as it usually is longer
+    sampling_rates = []
 
     try: 
         while(True):    
@@ -41,16 +42,22 @@ def collectData(exercise, filenum):
                 if first:
                     first = False
                     collecting = True
+                    start_time = time.time()
                     print("\nStarting Collection\n")
+                    time.sleep(0.15)    # Buffer to stop shift hold before next iteration
+
                 else:
                     # Completed a rep save the data to a file
                     print("\nSave repitition\n")
+                    end_time = time.time()
+                    sampling_rates.append(len(data[0])/(end_time-start_time))
+                    start_time = time.time()
+
                     time.sleep(0.15)
 
                     writeToFile(exercise, filenum, data)
                     data = [[],[],[],[],[],[]]
                     filenum+=1
-                
             # If space is pressed and not intaking then start intaking else stop intaking
             elif keyboard.is_pressed('space'):
                 viewing = not viewing
@@ -60,7 +67,7 @@ def collectData(exercise, filenum):
                     collecting = False
                     First = True
                     data = [[],[],[],[],[],[]]
-            
+
             if viewing:
                 input_data=bluetooth.readline()   
                 curr_data = input_data.decode().split(",")
@@ -76,6 +83,7 @@ def collectData(exercise, filenum):
     # Gracefully exit on control C
     except KeyboardInterrupt:
         bluetooth.close()   
+        print ("Sampling Rates: {} samples/second".format([round(x,2) for x in sampling_rates]))
         print("\n{0} Closed Bluetooth connection before exiting {0}\n".format("="*5))
         exit()
 

@@ -52,7 +52,7 @@ void setup()
   Serial.begin(115200);
   
   //Bluetooth connection
-  serial_connection.begin(9600); 
+  serial_connection.begin(115200); 
 
 
   // join I2C bus (I2Cdev library doesn't do this automatically)

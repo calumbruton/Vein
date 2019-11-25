@@ -5,6 +5,11 @@ Vein is a wearable device that uses an IMU and machine learning to count the num
 
 - Orientation Note: Battery Opening to Hand
 
+with arm extented:
+- yaw = turning left and right
+- roll = Up and down
+- pitch = wrist turn
+
 ### Exercises Currently Supported
 - Bicep Curl
 - Hammer Curl

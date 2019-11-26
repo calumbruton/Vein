@@ -48,6 +48,10 @@ sudo python3 collectData.py -e bicep-curl 1
 ```
 - Press spacebar to start viewing the data stream, press shift to start recording reps, and press shift at the end of each repition of the given exercise, press spacebar again to stop
 
+### train_exercise_recognition_model.py
+- Used to collect data for training
+- run the script using the argument
+
 ### dataVisualization.py
 - Used to preview the amount of time taken for each rep of a given exercise using matplotlib
 - run the script with the flag -e \<exercise name> to show a specific exercise, it will also print out every repition file and the number of data points in it to the console

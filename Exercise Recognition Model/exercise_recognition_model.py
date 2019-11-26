@@ -2,7 +2,7 @@ from keras.models import *
 from keras.layers import *
 
 NUM_CLASSES = 3     # The number of exercises the model will classify
-WINDOW_SIZE = 300
+WINDOW_SIZE = 150
 
 def createModel(n_filters=64, k_size=3):
     # model = Sequential()

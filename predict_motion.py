@@ -11,7 +11,7 @@ import numpy as np
 from keras.models import *
 from sklearn import preprocessing
 
-WINDOW_SIZE = 300
+WINDOW_SIZE = 150
 
 
 def predict(model, data, label_encoder):
@@ -26,7 +26,7 @@ def predict(model, data, label_encoder):
 def main():
 
     # Load a model
-    model = load_model("Exercise Recognition Model/65.h5")
+    model = load_model("Exercise Recognition Model/99.7k2f2.h5")
 
     # Label encodings -- Manually update
     label_encoder = preprocessing.LabelEncoder()

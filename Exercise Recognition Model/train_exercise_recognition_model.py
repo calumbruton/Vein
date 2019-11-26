@@ -22,16 +22,20 @@ from collections import Counter
 
 from exercise_recognition_model import *
 
-WINDOW_SIZE = 300       # The size of the window (number of data points) used for classification
+WINDOW_SIZE = 150       # The size of the window (number of data points) used for classification
+RANDOM_SEED = 39        # Seed Value to Split Train and Test Set
 TEST_SET = 0.25         # 25% Test Set
-RANDOM_SEED = 40        # Seed Value to Split Train and Test Set
+
+# TRAINING ATTRIBUTES
 OVERLAP = 0.5           # 50% Window Overlap
-NUM_MODELS = 10         # Number of models to create (choose the best one from)
-EPOCHS = 20             # Number of epochs on each validation set
+NUM_MODELS = 25         # Number of models to create (choose the best one from)
+EPOCHS = 30             # Number of epochs on each validation set
+BATCH_SIZE = 32
+EARLY_STOPING = 5
 
 # MODEL ATTRIBUTES
-KERNAL_SIZE = 5
-NUM_FILTERS = 8
+KERNAL_SIZE = 2
+NUM_FILTERS = 2
 
 def importData():
     dataset = []
@@ -126,8 +130,8 @@ def summarize_all_results(scores, params):
     # summarize mean and standard deviation
     for n in range(len(params[0])):
         for k in range(len(params[1])):
-            m, s = mean(scores[n][k]), std(scores[n][k])
-            print("Filters: {} Kernal Size: {} -- Mean Score: {:.3f} Std Dev: {:.3f}".format(params[0][n], params[1][n], m, s))
+            mx, mn, s = max(scores[n][k]), mean(scores[n][k]), std(scores[n][k])
+            print("Filters: {} Kernal Size: {} -- Mx Score: {:.3f} Mean Score: {:.3f} Std Dev: {:.3f}".format(params[0][n], params[1][n], mx, mn, s))
 
 
 def save_model(model, filename):
@@ -138,7 +142,10 @@ def main():
     parser = argparse.ArgumentParser(description='Create 1D CNN and Evaluate Results')
     parser.add_argument('-t', '--test', dest='test', default=False, action='store_true',
                     help='Run tests on different parameters')
+    parser.add_argument('-l', '--load', dest='load', default=False,
+                    help='Load a model specfied by the argument')
     args = parser.parse_args()
+    print(args.load)
     
     dataset = importData()
     train_data, test_data, train_labels, test_labels, labels = preprocess(dataset)
@@ -164,64 +171,81 @@ def main():
         params = [filter_sizes, kernal_sizes]
         test_all_params(train_data, test_data, train_labels, test_labels, params)
 
+    # Load a model of choice 
+    if(args.load):
+        print("Loadin model {} to evaluate accuracy".format(args.load))
+        model = load_model(args.load)
+        test_loss, test_acc = model.evaluate(test_data, test_labels, verbose=2)
+        print('\nFINAL MODEL TEST ACCURACY: {0:.2f}%\n'.format(test_acc*100))
 
-    best_acc = 0
-    all_results = []
-    # Create multiple models and see which turns out best
-    for _ in range(NUM_MODELS):
-        # Create and Compile the model
-        model = createModel(n_filters=NUM_FILTERS, k_size=KERNAL_SIZE)
-        print(model.summary())
+        # See predictions and report
+        predictions = model.predict(test_data)
+        y_pred = np.argmax(predictions, axis=1)
+        
+        # Change array vals from ints to their respective labels
+        y_pred_names = label_encoder.inverse_transform(y_pred)
+        test_label_names = label_encoder.inverse_transform(test_labels)
 
-        # Train the model using k-fold cross validation - one split acts as validation
-        kfold = StratifiedKFold(n_splits=6, shuffle=True, random_state=RANDOM_SEED)
+        # View predictions with their respective labels
+        print("\nSummary With Labels:\n", pd.crosstab(test_label_names, y_pred_names, rownames=['True'], colnames=['Predicted'], margins=True), sep="")
+        print("\nClassification report:\n", classification_report(test_label_names, y_pred_names))
 
-        # Early Stopping and Checkpointing to save best model
-        es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=5)
-        mc = ModelCheckpoint('cp_model.h5', monitor='val_acc', mode='max', verbose=0, save_best_only=True)
+    else:
+        best_acc = 0
+        all_results = []
+        # Create multiple models and see which turns out best
+        for _ in range(NUM_MODELS):
+            # Create and Compile the model
+            model = createModel(n_filters=NUM_FILTERS, k_size=KERNAL_SIZE)
+            print(model.summary())
 
-        # train and validation will be indices of values of each set, stratified to balance the number of each class
-        for train, validation in kfold.split(train_data, train_labels):
-            model.fit(train_data[train], train_labels[train], validation_data=(train_data[validation], train_labels[validation]), batch_size=32, epochs=EPOCHS, verbose=1, callbacks=[es, mc])
+            # Train the model using k-fold cross validation - one split acts as validation
+            kfold = StratifiedKFold(n_splits=6, shuffle=True, random_state=RANDOM_SEED)
 
-        cp_model = load_model('cp_model.h5')
-        _, cp_test_acc = cp_model.evaluate(test_data, test_labels, verbose=2)
-        _, final_test_acc = model.evaluate(test_data, test_labels, verbose=2)
+            # Early Stopping and Checkpointing to save best model
+            es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=EARLY_STOPING)
+            mc = ModelCheckpoint('cp_model.h5', monitor='val_acc', mode='max', verbose=0, save_best_only=True)
 
-        all_results.append((cp_test_acc, final_test_acc))
-        for test_acc, test_model in [(cp_test_acc, cp_model), (final_test_acc, model)]:
-            if (test_acc > best_acc):
-                save_model(test_model, 'best_model.h5')
-                best_acc = test_acc
+            # train and validation will be indices of values of each set, stratified to balance the number of each class
+            for train, validation in kfold.split(train_data, train_labels):
+                model.fit(train_data[train], train_labels[train], validation_data=(train_data[validation], train_labels[validation]), batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1, callbacks=[es, mc])
 
-    
-    
-    print(all_results)
-    
-    # Test the best model seen in training
-    model = load_model('best_model.h5')
-    test_loss, test_acc = model.evaluate(test_data, test_labels, verbose=2)
-    print('\nFINAL MODEL TEST ACCURACY: {0:.2f}%\n'.format(test_acc*100))
+            cp_model = load_model('cp_model.h5')
+            _, cp_test_acc = cp_model.evaluate(test_data, test_labels, verbose=2)
+            _, final_test_acc = model.evaluate(test_data, test_labels, verbose=2)
 
-    # Display accuracy on the training data
-    _, train_acc = model.evaluate(train_data, test_labels, verbose=2)
-    print('\nFINAL MODEL TRAINING SET ACCURACY: {0:.2f}%\n'.format(train_acc*100))
+            all_results.append((cp_test_acc, final_test_acc))
+            for test_acc, test_model in [(cp_test_acc, cp_model), (final_test_acc, model)]:
+                if (test_acc > best_acc):
+                    save_model(test_model, 'best_model.h5')
+                    best_acc = test_acc
 
-    # View the predictions
-    predictions = model.predict(test_data)
-    y_pred = np.argmax(predictions, axis=1)
-    print("Prediction Array:\n", y_pred)
-    print("Test Label Array:\n", test_labels)
-    print("\nConfusion Matrix:\n", confusion_matrix(test_labels, y_pred))
-    print("\nSummary:\n", pd.crosstab(test_labels, y_pred, rownames=['True'], colnames=['Predicted'], margins=True), sep="")
+        print(all_results)
+        
+        # Test the best model seen in training
+        model = load_model('best_model.h5')
+        test_loss, test_acc = model.evaluate(test_data, test_labels, verbose=2)
+        print('\nFINAL MODEL TEST ACCURACY: {0:.2f}%\n'.format(test_acc*100))
 
-    # Change array vals from ints to their respective labels
-    y_pred_names = label_encoder.inverse_transform(y_pred)
-    test_label_names = label_encoder.inverse_transform(test_labels)
+        # Display accuracy on the training data
+        _, train_acc = model.evaluate(train_data, train_labels, verbose=2)
+        print('\nFINAL MODEL TRAINING SET ACCURACY: {0:.2f}%\n'.format(train_acc*100))
 
-    # View predictions with their respective labels
-    print("\nSummary With Labels:\n", pd.crosstab(test_label_names, y_pred_names, rownames=['True'], colnames=['Predicted'], margins=True), sep="")
-    print("\nClassification report:\n", classification_report(test_label_names, y_pred_names))
+        # View the predictions
+        predictions = model.predict(test_data)
+        y_pred = np.argmax(predictions, axis=1)
+        print("Prediction Array:\n", y_pred)
+        print("Test Label Array:\n", test_labels)
+        print("\nConfusion Matrix:\n", confusion_matrix(test_labels, y_pred))
+        print("\nSummary:\n", pd.crosstab(test_labels, y_pred, rownames=['True'], colnames=['Predicted'], margins=True), sep="")
+
+        # Change array vals from ints to their respective labels
+        y_pred_names = label_encoder.inverse_transform(y_pred)
+        test_label_names = label_encoder.inverse_transform(test_labels)
+
+        # View predictions with their respective labels
+        print("\nSummary With Labels:\n", pd.crosstab(test_label_names, y_pred_names, rownames=['True'], colnames=['Predicted'], margins=True), sep="")
+        print("\nClassification report:\n", classification_report(test_label_names, y_pred_names))
 
 main()
 

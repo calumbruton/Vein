@@ -54,12 +54,13 @@ def start_predictions_to_file():
         # Only if we receive all of the data use it
         if (len(curr_data) == 6):
             curr_data[5] = curr_data[5][:-2]                # Remove end of line stuff
-            # print("Yaw: {}\tPitch: {}\tRoll: {}\t\tXAccel: {}\tYAccel: {}\tZAccel: {}".format(curr_data[0],curr_data[1],curr_data[2],curr_data[3],curr_data[4],curr_data[5]))
             for i in range(6):
                 data[i].append(curr_data[i])
         if timer % 50 == 0:
             prediction = predict(model, data, label_encoder)
             data_write = [list(x) for x in data]
+
+        if timer % 10 == 0:
             f = open("shared_data.txt", "w")
             f.write('{}\n{}'.format(list(data_write), prediction))
             f.close()

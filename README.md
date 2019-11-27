@@ -121,7 +121,7 @@ Input Data:
 
 ## Requirements
 ```
-pip3 install PyQt5 matplotlib numpy tensorflow sklearn pandas
+pip3 install PyQt5 matplotlib numpy tensorflow sklearn pandas dash plotly
 pip3 install keras==2.2.0
 ```
 

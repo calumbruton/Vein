@@ -12,22 +12,26 @@ from keras.models import *
 from sklearn import preprocessing
 
 WINDOW_SIZE = 150
+COUNTER = 0
 
 
 def predict(model, data, label_encoder):
+    global COUNTER
     data = np.array(data)
     data = np.transpose(data)
     data = np.expand_dims(data, axis=0)
     predictions = model.predict(data)
     prediction = label_encoder.inverse_transform(np.argmax(predictions, axis=1))
-    print("{1}\n{0}\n{1}".format(prediction, "-"*30))
+    print("{1}\n{0}\t{2}\n{1}".format(prediction, "-"*30, COUNTER))
+    COUNTER += 1
     return prediction
 
 
-def start_predictions():
+
+def start_predictions_to_file():
 
     # Load a model
-    model = load_model("Exercise Recognition Model/99.7k2f2.h5")
+    model = load_model("../Exercise Recognition Model/99.7k2f2.h5")
 
     # Label encodings -- Manually update
     label_encoder = preprocessing.LabelEncoder()
@@ -41,6 +45,7 @@ def start_predictions():
     
     # data is 6 dequeues of sensor data
     data = [collections.deque(WINDOW_SIZE*[0], WINDOW_SIZE) for _ in range(6)]
+    prediction = ''
 
     timer = 0
     while(True):
@@ -53,8 +58,15 @@ def start_predictions():
             for i in range(6):
                 data[i].append(curr_data[i])
         if timer % 50 == 0:
-            predict(model, data, label_encoder)
+            prediction = predict(model, data, label_encoder)
+            data_write = [list(x) for x in data]
+            f = open("shared_data.txt", "w")
+            f.write('{}\n{}'.format(list(data_write), prediction))
+            f.close()
         timer+=1
 
-start_predictions()
 
+
+
+if __name__ == "__main__":
+    start_predictions_to_file()

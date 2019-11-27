@@ -58,26 +58,23 @@ app.layout = html.Div(
                 ),
                 html.Div(
                     [
-                    # html.Div([dcc.Markdown(id="connection-text")], className="subtitle"),
                     html.Div([
-                        # html.Div([dcc.Markdown("""### Exercise:""".replace("  ", ""))]),
-                        html.Div([dcc.Markdown(id="prediction-text")])
+                        html.Div([dcc.Markdown(id="prediction-text")]),
+                        dcc.Graph(id="bargraph-confidence", animate=True, style={"margin": "0px 0px", "height":"30vh"}),
                         ], 
                         className="subtitle", style={"margin": "60px 0px"}),
                     dcc.Interval(
                         id='pred_update',                 
-                        interval=UPDATE_INTERVAL, # in milliseconds
+                        interval=1000, # in milliseconds
                         n_intervals=0),
                     ],
                 ),
                 html.Div(
                     [
-                    # html.Div([dcc.Markdown(id="connection-text")], className="subtitle"),
                     html.Div([
-                        # html.Div([dcc.Markdown("""### Repetitions:""".replace("  ", ""))]),
                         html.Div([dcc.Markdown(id="repetitions-text")])
                         ], 
-                        className="subtitle", style={"margin": "60px 0px"}),
+                        className="subtitle", style={"margin": "0px 0px"}),
                     dcc.Interval(
                         id='reps_update',                 
                         interval=UPDATE_INTERVAL, # in milliseconds
@@ -93,45 +90,20 @@ app.layout = html.Div(
                     [
                     dcc.Graph(id='Yaw', style={"margin": "20px 0px", "height": "30vh"}),   
                     dcc.Interval(
-                        id='yaw-update',
+                        id='update-graphs',
                         interval=UPDATE_INTERVAL, # in milliseconds
                         n_intervals=0
                     ),
                     dcc.Graph(id='Pitch', style={"margin": "0px 0px", "height":"30vh"}),
-                    dcc.Interval(
-                        id='pitch-update',
-                        interval=UPDATE_INTERVAL, # in milliseconds
-                        n_intervals=0
-                    ),
                     dcc.Graph(id='Roll', style={"margin": "0px 0px", "height": "30vh"}),
-                    dcc.Interval(
-                        id='roll-update',
-                        interval=UPDATE_INTERVAL, # in milliseconds
-                        n_intervals=0
-                    ),
                     ],
                     className="column", style={"width": "50%", "float": "left"}
                 ),
                 html.Div(
                     [
                     dcc.Graph(id='XAccel', style={"margin": "20px 0px", "height": "30vh"}),   
-                    dcc.Interval(
-                        id='x-update',
-                        interval=UPDATE_INTERVAL, # in milliseconds
-                        n_intervals=0
-                    ),
                     dcc.Graph(id='YAccel', style={"margin": "0px 0px", "height":"30vh"}),
-                    dcc.Interval(
-                        id='y-update',
-                        interval=UPDATE_INTERVAL, # in milliseconds
-                        n_intervals=0
-                    ),
                     dcc.Graph(id='ZAccel', style={"margin": "0px 0px", "height": "30vh"}),
-                    dcc.Interval(
-                        id='z-update',
-                        interval=UPDATE_INTERVAL, # in milliseconds
-                        n_intervals=0
-                    ),
                     ],
                     className="column", style={"width": "50%", "float": "right"}
                 )
@@ -145,30 +117,35 @@ app.layout = html.Div(
 )
 
 
-# @app.callback(
-#     Output("connection-text", "children"),
-#     [Input('pred_update', 'n_intervals')]
-# )
-# def update_output_div(value):
-#     if connected:
-#         return """### Connected""".replace("  ", "")
-#     else:
-#         return """### Not Connected""".replace("  ", "")
-
 
 @app.callback(
-    Output("prediction-text", "children"),
+    [Output("prediction-text", "children"),
+    Output("bargraph-confidence", "figure")],
     [Input('pred_update', 'n_intervals')]
 )
 def update_output_div(value):
     f = open("shared_data.txt", "r")
     f.readline()
     pred = f.readline()
+    labels = list(literal_eval(f.readline()))
+    conf = list(literal_eval(f.readline()))
     f.close()
+
+    d = plotly.graph_objs.Bar(
+            x=["Curl","Row","Raise"],
+            y=conf,
+            name='Confidence'
+            )
 
     return """
     ### Exercise: {}
-    """.replace("  ", "").format(pred)
+    """.replace("  ", "").format(pred), {'data': [d],
+    'layout' : go.Layout(
+        margin={'t': 40, 'b': 30, 'l':20, 'r':0}, 
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        yaxis=dict(range=[0, 100])
+    )}
 
 
 @app.callback(
@@ -176,18 +153,20 @@ def update_output_div(value):
     [Input('reps_update', 'n_intervals')]
 )
 def update_output_div(value):
-    # f = open("shared_data.txt", "r")
-    # f.readline()
-    # pred = f.readline()
-    # f.close()
-
     return """
     ### Repetitions: {}
     """.replace("  ", "").format(0)
 
 
-@app.callback(Output('Yaw', 'figure'),
-        [Input('yaw-update', 'n_intervals')])
+# Update All Graphs
+@app.callback(
+        [Output('Yaw', 'figure'),
+        Output('Pitch', 'figure'),
+        Output('Roll', 'figure'),
+        Output('XAccel', 'figure'),
+        Output('YAccel', 'figure'),
+        Output('ZAccel', 'figure')],
+        [Input('update-graphs', 'n_intervals')])
 
 def update_graph_scatter(n):
     f = open("shared_data.txt", "r")
@@ -195,115 +174,45 @@ def update_graph_scatter(n):
     f.close()
     data = list(literal_eval(data_line))
 
-    dats = plotly.graph_objs.Scatter(
+    d1 = plotly.graph_objs.Scatter(
             x=[i for i in range(0, 150)],
             y=list(data[0]),
             name='Scatter',
             mode= 'lines'
             )
-
-    return {'data': [dats],'layout' : go.Layout(xaxis=dict(range=[0, 150]),
-                                                yaxis=dict(range=[-180, 180]),margin={'t': 40, 'b': 20}, title="Yaw")}
-
-
-@app.callback(Output('Pitch', 'figure'),
-        [Input('pitch-update', 'n_intervals')])
-
-def update_graph_scatter(n):
-    f = open("shared_data.txt", "r")
-    data_line = f.readline()
-    f.close()
-    data = list(literal_eval(data_line))
-
-    dats = plotly.graph_objs.Scatter(
+    d2 = plotly.graph_objs.Scatter(
             x=[i for i in range(0, 150)],
             y=list(data[1]),
             name='Scatter',
             mode= 'lines'
             )
-
-    return {'data': [dats],'layout' : go.Layout(xaxis=dict(range=[0, 150]),
-                                                yaxis=dict(range=[-180,180]),margin={'t': 40, 'b': 20}, title="Pitch")}
-
-
-@app.callback(Output('Roll', 'figure'),
-        [Input('roll-update', 'n_intervals')])
-
-def update_graph_scatter(n):
-    f = open("shared_data.txt", "r")
-    data_line = f.readline()
-    f.close()
-    data = list(literal_eval(data_line))
-
-    dats = plotly.graph_objs.Scatter(
+    d3 = plotly.graph_objs.Scatter(
             x=[i for i in range(0, 150)],
             y=list(data[2]),
             name='Scatter',
             mode= 'lines'
             )
-
-    return {'data': [dats],'layout' : go.Layout(xaxis=dict(range=[0, 150]),
-                                                yaxis=dict(range=[-180,180]),margin={'t': 40, 'b': 20}, title="Roll")}
-
-
-@app.callback(Output('XAccel', 'figure'),
-        [Input('x-update', 'n_intervals')])
-
-def update_graph_scatter(n):
-    f = open("shared_data.txt", "r")
-    data_line = f.readline()
-    f.close()
-    data = list(literal_eval(data_line))
-
-    dats = plotly.graph_objs.Scatter(
+    d4 = plotly.graph_objs.Scatter(
             x=[i for i in range(0, 150)],
             y=list(data[3]),
             name='Scatter',
             mode= 'lines'
             )
-
-    return {'data': [dats],'layout' : go.Layout(xaxis=dict(range=[0, 150]),
-                                                yaxis=dict(range=[-6000,6000]),margin={'t': 40, 'b': 20}, title="X-Acceleration")}
-
-
-@app.callback(Output('YAccel', 'figure'),
-        [Input('y-update', 'n_intervals')])
-
-def update_graph_scatter(n):
-    f = open("shared_data.txt", "r")
-    data_line = f.readline()
-    f.close()
-    data = list(literal_eval(data_line))
-
-    dats = plotly.graph_objs.Scatter(
+    d5 = plotly.graph_objs.Scatter(
             x=[i for i in range(0, 150)],
             y=list(data[4]),
             name='Scatter',
             mode= 'lines'
             )
-
-    return {'data': [dats],'layout' : go.Layout(xaxis=dict(range=[0, 150]),
-                                                yaxis=dict(range=[-6000,6000]),margin={'t': 40, 'b': 20}, title="Y-Acceleration")}
-
-
-@app.callback(Output('ZAccel', 'figure'),
-        [Input('z-update', 'n_intervals')])
-
-def update_graph_scatter(n):
-    f = open("shared_data.txt", "r")
-    data_line = f.readline()
-    f.close()
-    data = list(literal_eval(data_line))
-
-    dats = plotly.graph_objs.Scatter(
+    d6 = plotly.graph_objs.Scatter(
             x=[i for i in range(0, 150)],
             y=list(data[5]),
             name='Scatter',
             mode= 'lines'
             )
 
-    return {'data': [dats],'layout' : go.Layout(xaxis=dict(range=[0, 150]),
-                                                yaxis=dict(range=[-6000,6000]),margin={'t': 40, 'b': 20}, title="Z Acceleration")}
+    return {'data': [d1],'layout' : go.Layout(xaxis=dict(range=[0, 150]), yaxis=dict(range=[-180, 180]),margin={'t': 40, 'b': 20}, title="Yaw")}, {'data': [d2],'layout' : go.Layout(xaxis=dict(range=[0, 150]), yaxis=dict(range=[-180,180]),margin={'t': 40, 'b': 20}, title="Pitch")}, {'data': [d3],'layout' : go.Layout(xaxis=dict(range=[0, 150]), yaxis=dict(range=[-180,180]),margin={'t': 40, 'b': 20}, title="Roll")}, {'data': [d4],'layout' : go.Layout(xaxis=dict(range=[0, 150]), yaxis=dict(range=[-6000,6000]),margin={'t': 40, 'b': 20}, title="X-Acceleration")}, {'data': [d5],'layout' : go.Layout(xaxis=dict(range=[0, 150]), yaxis=dict(range=[-6000,6000]),margin={'t': 40, 'b': 20}, title="Y-Acceleration")}, {'data': [d6],'layout' : go.Layout(xaxis=dict(range=[0, 150]),yaxis=dict(range=[-6000,6000]),margin={'t': 40, 'b': 20}, title="Z-Acceleration")}
+
 
 
 

@@ -20,11 +20,13 @@ def predict(model, data, label_encoder):
     data = np.array(data)
     data = np.transpose(data)
     data = np.expand_dims(data, axis=0)
-    predictions = model.predict(data)
-    prediction = label_encoder.inverse_transform(np.argmax(predictions, axis=1))
+    pred_scores = model.predict(data)
+    prediction = label_encoder.inverse_transform(np.argmax(pred_scores, axis=1))
+    pred_scores = [round(x*100,1) for x in pred_scores.flatten()]
+    print(pred_scores)
     print("{1}\n{0}\t{2}\n{1}".format(prediction, "-"*30, COUNTER))
     COUNTER += 1
-    return prediction
+    return prediction, pred_scores
 
 
 
@@ -35,7 +37,8 @@ def start_predictions_to_file():
 
     # Label encodings -- Manually update
     label_encoder = preprocessing.LabelEncoder()
-    label_encoder.fit(["Bicep Curls", "Dumbbell Row", "Lateral Raises"])
+    labels = ["Bicep Curls", "Dumbbell Row", "Lateral Raises"]
+    label_encoder.fit(labels)
 
     print("Start")
     port="/dev/tty.HC-05-DevB"                          # Connect to my HC-05 BT Module
@@ -57,12 +60,11 @@ def start_predictions_to_file():
             for i in range(6):
                 data[i].append(curr_data[i])
         if timer % 50 == 0:
-            prediction = predict(model, data, label_encoder)
+            prediction, conf_scores = predict(model, data, label_encoder)
             data_write = [list(x) for x in data]
-
         if timer % 10 == 0:
             f = open("shared_data.txt", "w")
-            f.write('{}\n{}'.format(list(data_write), prediction))
+            f.write('{}\n{}\n{}\n{}'.format(list(data_write), prediction, labels, conf_scores))
             f.close()
         timer+=1
 

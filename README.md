@@ -48,7 +48,7 @@ python3 predict_motion_gui.py
 In another terminal start the interface:
 ```
 cd Dashboard
-gunicorn -w 8 app:server
+gunicorn --workers=3 --threads=3 app:server
 ```
 
 <img width="1218" alt="Screen Shot 2019-11-27 at 5 05 18 AM" src="https://user-images.githubusercontent.com/12948431/69714017-9ad4c280-10d3-11ea-82e2-79bca345e5c5.png">

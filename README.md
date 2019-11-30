@@ -12,8 +12,11 @@ with arm extented:
 
 ### Exercises Currently Supported
 - Bicep Curl
-- Hammer Curl
 - Lateral Raises
+- Dumbbell Row
+
+-------- Future ----
+- Hammer Curl
 - Front Raises
 - Dumbbell Overhead Press
 - Dumbbell Deadlift
@@ -21,21 +24,11 @@ with arm extented:
 - Dumbbell Lunge
 - Bent Over Dumbbell Reverse Fly
 - Dumbbell Row (hand)
-
---------
-
 - Pullup
 - Bench Press
 - Deadlift
 - Squat
 - Overhead press
-
-### Participants
-
-- Calum = 0
-- Natalie = 1000
-- Karen = 2000
-- Mark = 3000
 
 
 ## Start Dashboard
@@ -109,14 +102,28 @@ python3 findGarbageData.py -n 20
 ```
 
 
-### train.py
+### Exercise Recognition Model / train_exercise_recognition_model.py
 - Used to train the keras model on the data collected
+- Can load and see evaluation of an existing model using -l <filename>
 ```
-python3 train.py
+python3 train_exercise_recognition_model.py
 ```
 
-### model.py
+### Exercise Recognition Model / excercise_recognition_model.py
 - This is where the code for the keras machine learning model is written
+
+
+### Repetition Counter Model / train_repetition_model.py
+- Used to train the keras model on the data collected with repetition markers
+- Can load and see evaluation of an existing model using -l \<filename>
+- -e \<excercise> flag must be set as this trains a repetition counting model for a single exercise
+```
+python3 train_repetition_model.py -e bicep-curl
+```
+
+### Repetition Counter Model / repetition_model.py
+- This is where the code for the keras machine learning model is written for the repetition counting CNN
+
 
 
 ## Prototype Components
@@ -129,10 +136,7 @@ python3 train.py
 
 ## Machine Learning Model
 
-Input Data:
-
-6xT where T can be decided as the number of data points to use in a given prediction. In my experiments I decided to use a T value of (TODO)
-
+TODO
 
 
 ## Requirements

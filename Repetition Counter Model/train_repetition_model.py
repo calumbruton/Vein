@@ -20,53 +20,59 @@ from numpy import mean
 from numpy import std
 from collections import Counter
 
-from exercise_recognition_model import *
+from repetition_model import *
 
-WINDOW_SIZE = 150       # The size of the window (number of data points) used for classification
+WINDOW_SIZE = 30       # The size of the window (number of data points) used for classification
 RANDOM_SEED = 39        # Seed Value to Split Train and Test Set
 TEST_SET = 0.25         # 25% Test Set
 
 # TRAINING ATTRIBUTES
 OVERLAP = 0.5           # 50% Window Overlap
-NUM_MODELS = 25         # Number of models to create (choose the best one from)
+NUM_MODELS = 1         # Number of models to create (choose the best one from)
 EPOCHS = 30             # Number of epochs on each validation set
 BATCH_SIZE = 32
 EARLY_STOPING = 5
+TIMES_THROUGH_FOLDS = 2
 
 # MODEL ATTRIBUTES
 KERNAL_SIZE = 2
 NUM_FILTERS = 2
 
-def importData():
+
+def importData(exercise):
+    ''' import all data for the given exercise'''
     dataset = []
 
     # Open file for reading data
-    for exercise in os.listdir("../data"):
-        for set_file in os.listdir("../data/{}".format(exercise)):
-            print(set_file)
-            f = open("../data/{}/{}".format(exercise,set_file), "r")
-            first_line = f.readline()
-            rep_data = literal_eval(first_line)
-            dataset.append((rep_data, exercise))
-            f.close()
+    for set_file in os.listdir("../rep-data/{}".format(exercise)):
+        print(set_file)
+        f = open("../rep-data/{}/{}".format(exercise,set_file), "r")
+        first_line = f.readline()
+        rep_data = literal_eval(first_line)
+        second_line = f.readline()
+        rep_markers = literal_eval(second_line)
+        dataset.append((rep_data, rep_markers))
+        f.close()
 
+    print(len(dataset[0][0][0]), len(dataset[0][1]))
+
+    # dataset is array of (IMU_data, rep_marker_array)
     return dataset
 
 
 def preprocess(dataset):
     clean_data = []
     labels = []
-    categories = set()
+    categories = ["None", "Rep"]
 
     # dataset [i] is the ith rep
     # dataset[i][0] is the ith reps 6 arrays of imu data
     # dataset[i][1] is the excercise name label
     # dataset[i][0][n] is the ith reps nth set of data (Yaw, Pitch etc.)
 
-    # For each set data, a tuple ([6 lists of imu data],label)
+    # For each set data, a tuple ([6 lists of imu data], repetition marker array)
     for set_data in dataset:
-        label = set_data[1]
-        categories.add(label)
+        rep_markers = set_data[1]
 
         # The window can only be X points, so 
         num_points = len(set_data[0][0])
@@ -88,9 +94,13 @@ def preprocess(dataset):
 
             data = np.array(new_data)
             data = np.transpose(data) # Reshape the data for 1D keras model
-
             clean_data.append(data)
-            labels.append(label)
+
+            # Determine label if there is a value of 1 in the window
+            if (sum(rep_markers[start:end]) > 0):
+                labels.append("Rep")
+            else: labels.append("None")
+
             start += increment
 
     clean_data = np.array(clean_data)
@@ -140,14 +150,16 @@ def save_model(model, filename):
 
 def main():
     parser = argparse.ArgumentParser(description='Create 1D CNN and Evaluate Results')
+    parser.add_argument('-e', '--exercise', dest='exercise', required=True,
+                    help='The exercise we are creating a repetition counting model for -> each requires their own')
     parser.add_argument('-t', '--test', dest='test', default=False, action='store_true',
                     help='Run tests on different parameters')
     parser.add_argument('-l', '--load', dest='load', default=False,
-                    help='Load a model to evaluate specfied by the argument')
+                    help='Load a model specfied by the argument')
     args = parser.parse_args()
-    print(args.load)
+    print(args.load, args.exercise)
     
-    dataset = importData()
+    dataset = importData(args.exercise)
     train_data, test_data, train_labels, test_labels, labels = preprocess(dataset)
 
     print("{1}\nTraining set record distribution: \n{0}\n{1}".format(Counter(train_labels), "-"*100))
@@ -176,7 +188,6 @@ def main():
         print("Loadin model {} to evaluate accuracy".format(args.load))
         model = load_model(args.load)
         test_loss, test_acc = model.evaluate(test_data, test_labels, verbose=2)
-        print(model.summary())
         print('\nFINAL MODEL TEST ACCURACY: {0:.2f}%\n'.format(test_acc*100))
 
         # See predictions and report
@@ -205,26 +216,27 @@ def main():
 
             # Early Stopping and Checkpointing to save best model
             es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=EARLY_STOPING)
-            mc = ModelCheckpoint('cp_model.h5', monitor='val_acc', mode='max', verbose=0, save_best_only=True)
+            mc = ModelCheckpoint('{}-cp_model.h5'.format(args.exercise), monitor='val_acc', mode='max', verbose=0, save_best_only=True)
 
             # train and validation will be indices of values of each set, stratified to balance the number of each class
-            for train, validation in kfold.split(train_data, train_labels):
-                model.fit(train_data[train], train_labels[train], validation_data=(train_data[validation], train_labels[validation]), batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1, callbacks=[es, mc])
+            for _ in range(TIMES_THROUGH_FOLDS):
+                for train, validation in kfold.split(train_data, train_labels):
+                    model.fit(train_data[train], train_labels[train], validation_data=(train_data[validation], train_labels[validation]), batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1, callbacks=[es, mc])
 
-            cp_model = load_model('cp_model.h5')
+            cp_model = load_model('{}-cp_model.h5'.format(args.exercise))
             _, cp_test_acc = cp_model.evaluate(test_data, test_labels, verbose=2)
             _, final_test_acc = model.evaluate(test_data, test_labels, verbose=2)
 
             all_results.append((cp_test_acc, final_test_acc))
             for test_acc, test_model in [(cp_test_acc, cp_model), (final_test_acc, model)]:
                 if (test_acc > best_acc):
-                    save_model(test_model, 'best_model.h5')
+                    save_model(test_model, '{}-best_model.h5'.format(args.exercise))
                     best_acc = test_acc
 
         print(all_results)
         
         # Test the best model seen in training
-        model = load_model('best_model.h5')
+        model = load_model('{}-best_model.h5'.format(args.exercise))
         test_loss, test_acc = model.evaluate(test_data, test_labels, verbose=2)
         print('\nFINAL MODEL TEST ACCURACY: {0:.2f}%\n'.format(test_acc*100))
 
